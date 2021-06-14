@@ -3,19 +3,20 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+
 	"github.com/gorilla/mux"
 )
 
 func NewHTTPServer(addr string) *http.Server {
-	httpsrv := NewHTTPServer()
+	httpsrv := newHTTPServer()
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", httpsrv.handleProduce).Methods("POST")
 	r.HandleFunc("/", httpsrv.handleConsume).Methods("GET")
-	return &http.Server(
-		Addr: addr,
+	return &http.Server{
+		Addr:    addr,
 		Handler: r,
-	)
+	}
 }
 
 type httpServer struct {
@@ -24,7 +25,7 @@ type httpServer struct {
 
 func newHTTPServer() *httpServer {
 	return &httpServer{
-		Log: NewLog()
+		Log: NewLog(),
 	}
 }
 
@@ -54,7 +55,7 @@ func (s *httpServer) handleProduce(w http.ResponseWriter, r *http.Request) {
 	off, err := s.Log.Append(req.Record)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return 
+		return
 	}
 	res := ProduceResponse{Offset: off}
 	err = json.NewEncoder(w).Encode(res)
@@ -63,7 +64,6 @@ func (s *httpServer) handleProduce(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
 
 func (s *httpServer) handleConsume(w http.ResponseWriter, r *http.Request) {
 	var req ConsumeRequest
@@ -75,7 +75,7 @@ func (s *httpServer) handleConsume(w http.ResponseWriter, r *http.Request) {
 	record, err := s.Log.Read(req.Offset)
 	if err == ErrOffsetNotFound {
 		http.Error(w, err.Error(), http.StatusNotFound)
-		return 
+		return
 	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
